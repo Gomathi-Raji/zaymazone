@@ -57,8 +57,8 @@ export const Footer = () => {
         
         {/* Footer Links */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-          {/* Logo */}
-          <div className="col-span-2 md:col-span-1">
+          {/* Logo - Temporarily hidden for logo reveal */}
+          <div className="col-span-2 md:col-span-1 opacity-0">
             <div className="flex items-center mb-6">
               <Link to="/" onClick={scrollToTop}>
                 <img 
