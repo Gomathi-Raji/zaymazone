@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { analytics } from "@/lib/analytics";
 import { useEffect } from "react";
 import SocialShare from "@/components/SocialShare";
+import SEO from "@/components/SEO";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -122,6 +123,41 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {product && (
+        <SEO
+          title={`${product.name} - Zaymazone`}
+          description={product.description || `Buy authentic ${product.name} handcrafted by skilled artisans. ${product.category} from Zaymazone.`}
+          keywords={`${product.name}, ${product.category}, handcrafted, artisan, ${product.tags?.join(', ') || ''}`}
+          image={getImageUrl(product.images[0])}
+          type="product"
+          structuredData={{
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": product.name,
+            "description": product.description,
+            "image": product.images.map(img => getImageUrl(img)),
+            "brand": {
+              "@type": "Brand",
+              "name": "Zaymazone"
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": product.price,
+              "priceCurrency": "INR",
+              "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              "seller": {
+                "@type": "Organization",
+                "name": "Zaymazone"
+              }
+            },
+            "aggregateRating": product.rating ? {
+              "@type": "AggregateRating",
+              "ratingValue": product.rating,
+              "reviewCount": product.totalRatings || 0
+            } : undefined
+          }}
+        />
+      )}
       <Navigation />
       
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 mobile-product-detail">

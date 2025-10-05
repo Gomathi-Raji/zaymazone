@@ -21,6 +21,7 @@ import {
 
 // Blog images and author avatars are now served from API
 import { getImageUrl } from "@/lib/api";
+import SEO from "@/components/SEO";
 
 const BlogPost = () => {
   const { id } = useParams();
@@ -149,6 +150,39 @@ const BlogPost = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${post.title} - Zaymazone Blog`}
+        description={post.excerpt || post.content.substring(0, 160).replace(/<[^>]*>/g, '') + '...'}
+        keywords={`${post.category}, ${post.tags?.join(', ') || ''}, blog, crafts, artisans, traditional arts`}
+        image={post.image}
+        type="article"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "headline": post.title,
+          "description": post.excerpt || post.content.substring(0, 160).replace(/<[^>]*>/g, ''),
+          "image": post.image,
+          "author": {
+            "@type": "Person",
+            "name": post.author.name,
+            "image": post.author.avatar
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Zaymazone",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "/assets/logo.png"
+            }
+          },
+          "datePublished": post.date,
+          "dateModified": post.date,
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": window.location.href
+          }
+        }}
+      />
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

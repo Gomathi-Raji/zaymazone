@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Product } from "@/lib/api";
 import { getImageUrl } from "@/lib/api";
 import { QuickViewDialog } from "./QuickViewDialog";
+import { LazyImage } from "./LazyImage";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -123,30 +124,25 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         {/* Desktop - Link to product page */}
         <Link to={`/product/${product.id}`} className="hidden md:block">
-          <motion.img
+          <LazyImage
             src={getImageUrl(product.images[0])}
             alt={product.name}
-            className="w-full h-full object-cover object-center cursor-pointer block"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            loading="lazy"
-            style={{ maxWidth: '100%', height: 'auto' }}
+            className="w-full h-full object-cover object-center cursor-pointer"
           />
         </Link>
 
         {/* Mobile - Touchable image */}
-        <div className="md:hidden relative">
-          <motion.img
+        <div
+          className="md:hidden relative cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            setShowMobileActions(!showMobileActions);
+          }}
+        >
+          <LazyImage
             src={getImageUrl(product.images[0])}
             alt={product.name}
-            className="w-full h-full object-cover object-center cursor-pointer block"
-            onClick={(e) => {
-              e.preventDefault();
-              setShowMobileActions(!showMobileActions);
-            }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            loading="lazy"
-            style={{ maxWidth: '100%', height: 'auto' }}
+            className="w-full h-full object-cover object-center"
           />
           {/* Touch hint */}
           {!showMobileActions && (
