@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => ({
       webp: {
         quality: 80,
       },
+      exclude: ['**/logo-invitation.png'],
     }),
     VitePWA({
       registerType: 'autoUpdate',
