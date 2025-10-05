@@ -5,26 +5,6 @@ import User from '../models/User.js';
 // Middleware to authenticate requests with Firebase tokens or JWT tokens
 const authenticateToken = async (req, res, next) => {
   try {
-    // TEMPORARY: Enable development bypass for production testing
-    // TODO: Remove this after fixing authentication issues
-    console.log('Auth middleware - NODE_ENV:', process.env.NODE_ENV);
-    
-    if (process.env.NODE_ENV !== 'development') {
-      console.log('Auth middleware - Production bypass active for testing');
-      
-      // Create a dummy artisan user for testing
-      req.user = {
-        _id: '507f1f77bcf86cd799439011', // Dummy MongoDB ObjectId
-        email: 'test@example.com',
-        name: 'Test Artisan',
-        role: 'artisan', // Set as artisan for artisan routes
-        isActive: true,
-        firebaseUid: 'test-firebase-uid',
-        authProvider: 'firebase'
-      };
-      return next();
-    }
-    
     const authHeader = req.headers.authorization;
     
     console.log('Auth middleware - Authorization header:', authHeader ? 'Present' : 'Missing');
