@@ -74,7 +74,7 @@ const ArtisanOrders = () => {
 
     try {
       const response = await api.getArtisanOrders();
-      setOrders(response);
+      setOrders(response.orders);
     } catch (error) {
       console.error('Failed to load orders:', error);
       if (!silent) {

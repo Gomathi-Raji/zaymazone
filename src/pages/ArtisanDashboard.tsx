@@ -388,7 +388,7 @@ const ArtisanDashboard = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {products.slice(0, 6).map((product) => (
-                      <Card key={product._id} className="overflow-hidden">
+                      <Card key={product.id} className="overflow-hidden">
                         <div className="aspect-square bg-muted">
                           {product.images?.[0] && (
                             <img

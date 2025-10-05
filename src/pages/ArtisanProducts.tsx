@@ -60,7 +60,7 @@ const ArtisanProducts = () => {
 
     try {
       const response = await api.getArtisanProducts();
-      setProducts(response);
+      setProducts(response.products);
     } catch (error) {
       console.error('Failed to load products:', error);
       if (!silent) {

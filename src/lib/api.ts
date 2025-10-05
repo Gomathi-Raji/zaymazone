@@ -817,7 +817,15 @@ export const api = {
 	// Artisans
 	getArtisans: artisansApi.getAll,
 	getArtisan: artisansApi.getById,
-	getArtisanOrders: () => apiRequest<Order[]>('/api/orders/artisan/my-orders', { auth: true }),
+	getArtisanOrders: () => apiRequest<{
+		orders: Order[];
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			pages: number;
+		};
+	}>('/api/orders/artisan/my-orders', { auth: true }),
 	getArtisanAnalytics: () => apiRequest<{
 		totalOrders: number;
 		totalRevenue: number;
@@ -825,7 +833,15 @@ export const api = {
 		monthlyRevenue: Array<{ _id: { year: number; month: number }; revenue: number; orders: number }>;
 		topProducts: Array<{ _id: string; name: string; totalSold: number; revenue: number }>;
 	}>('/api/orders/artisan/analytics', { auth: true }),
-	getArtisanProducts: () => apiRequest<Product[]>('/api/products/artisan/my-products', { auth: true }),
+	getArtisanProducts: () => apiRequest<{
+		products: Product[];
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			pages: number;
+		};
+	}>('/api/products/artisan/my-products', { auth: true }),
 	// Images
 	uploadImage: imagesApi.upload,
 	
