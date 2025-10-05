@@ -56,8 +56,8 @@ const ArtisanDashboard = () => {
       ]);
 
       setAnalytics(analyticsData);
-      setOrders(ordersData);
-      setProducts(productsData);
+      setOrders(ordersData.orders);
+      setProducts(productsData.products);
     } catch (error) {
       console.error('Failed to load artisan data:', error);
       if (!silent) {
