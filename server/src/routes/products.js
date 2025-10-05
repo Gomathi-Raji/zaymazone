@@ -3,6 +3,7 @@ import { z } from 'zod'
 import Product from '../models/Product.js'
 import Artisan from '../models/Artisan.js'
 import { requireAuth, optionalAuth } from '../middleware/auth.js'
+import { authenticateToken } from '../middleware/firebase-auth.js'
 import { validate, paginationSchema, searchSchema } from '../middleware/validation.js'
 
 const router = Router()
@@ -234,7 +235,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // Artisan routes
 // Get artisan's products
 router.get('/artisan/my-products',
-	requireAuth,
+	authenticateToken,
 	validate(paginationSchema, 'query'),
 	async (req, res) => {
 		try {

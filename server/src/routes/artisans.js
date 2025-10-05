@@ -44,34 +44,7 @@ router.get('/', async (_req, res) => {
 	return res.json(items)
 })
 
-router.get('/:id', async (req, res) => {
-	const item = await Artisan.findById(req.params.id).lean()
-	if (!item) return res.status(404).json({ error: 'Not found' })
-	return res.json(item)
-})
-
-router.post('/', authenticateToken, async (req, res) => {
-	const parsed = upsertSchema.safeParse(req.body)
-	if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0]?.message })
-	const created = await Artisan.create(parsed.data)
-	return res.status(201).json(created)
-})
-
-router.put('/:id', authenticateToken, async (req, res) => {
-	const parsed = upsertSchema.partial().safeParse(req.body)
-	if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0]?.message })
-	const updated = await Artisan.findByIdAndUpdate(req.params.id, parsed.data, { new: true })
-	if (!updated) return res.status(404).json({ error: 'Not found' })
-	return res.json(updated)
-})
-
-router.delete('/:id', authenticateToken, async (req, res) => {
-	const deleted = await Artisan.findByIdAndDelete(req.params.id)
-	if (!deleted) return res.status(404).json({ error: 'Not found' })
-	return res.status(204).end()
-})
-
-// Artisan profile routes
+// Artisan profile routes (must come before /:id route)
 // Get current user's artisan profile
 router.get('/profile', authenticateToken, async (req, res) => {
 	try {
@@ -157,6 +130,34 @@ router.put('/profile', authenticateToken, async (req, res) => {
 		console.error('Error updating artisan profile:', error)
 		res.status(500).json({ error: 'Failed to update artisan profile' })
 	}
+})
+
+// Generic CRUD routes (must come after specific routes)
+router.get('/:id', async (req, res) => {
+	const item = await Artisan.findById(req.params.id).lean()
+	if (!item) return res.status(404).json({ error: 'Not found' })
+	return res.json(item)
+})
+
+router.post('/', authenticateToken, async (req, res) => {
+	const parsed = upsertSchema.safeParse(req.body)
+	if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0]?.message })
+	const created = await Artisan.create(parsed.data)
+	return res.status(201).json(created)
+})
+
+router.put('/:id', authenticateToken, async (req, res) => {
+	const parsed = upsertSchema.partial().safeParse(req.body)
+	if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0]?.message })
+	const updated = await Artisan.findByIdAndUpdate(req.params.id, parsed.data, { new: true })
+	if (!updated) return res.status(404).json({ error: 'Not found' })
+	return res.json(updated)
+})
+
+router.delete('/:id', authenticateToken, async (req, res) => {
+	const deleted = await Artisan.findByIdAndDelete(req.params.id)
+	if (!deleted) return res.status(404).json({ error: 'Not found' })
+	return res.status(204).end()
 })
 
 export default router
