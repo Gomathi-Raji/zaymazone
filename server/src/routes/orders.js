@@ -377,4 +377,123 @@ router.patch('/:id/status',
 	}
 )
 
+// Artisan routes
+// Get artisan's orders
+router.get('/artisan/my-orders',
+	authenticateToken,
+	validate(paginationSchema, 'query'),
+	async (req, res) => {
+		try {
+			const { page, limit, sort, order } = req.validatedQuery
+			const skip = (page - 1) * limit
+			
+			const sortObj = {}
+			if (sort) {
+				sortObj[sort] = order === 'asc' ? 1 : -1
+			} else {
+				sortObj.createdAt = -1
+			}
+			
+			// Find orders where any item belongs to this artisan
+			const orders = await Order.find({ 'items.artisanId': req.user._id })
+				.sort(sortObj)
+				.skip(skip)
+				.limit(limit)
+				.populate('items.productId', 'name images')
+				.populate('userId', 'name email')
+				.select('-__v')
+				.lean()
+			
+			const total = await Order.countDocuments({ 'items.artisanId': req.user._id })
+			
+			res.json({
+				orders,
+				pagination: {
+					page,
+					limit,
+					total,
+					pages: Math.ceil(total / limit)
+				}
+			})
+		} catch (error) {
+			console.error('Error fetching artisan orders:', error)
+			res.status(500).json({ error: 'Failed to fetch orders' })
+		}
+	}
+)
+
+// Get artisan analytics
+router.get('/artisan/analytics',
+	authenticateToken,
+	async (req, res) => {
+		try {
+			const artisanId = req.user._id
+			
+			// Get total orders for this artisan
+			const totalOrders = await Order.countDocuments({ 'items.artisanId': artisanId })
+			
+			// Get total revenue for this artisan
+			const revenueResult = await Order.aggregate([
+				{ $unwind: '$items' },
+				{ $match: { 'items.artisanId': artisanId } },
+				{ $group: { _id: null, total: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } }
+			])
+			
+			const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0
+			
+			// Get orders by status
+			const ordersByStatus = await Order.aggregate([
+				{ $unwind: '$items' },
+				{ $match: { 'items.artisanId': artisanId } },
+				{ $group: { _id: '$status', count: { $sum: 1 } } }
+			])
+			
+			// Get monthly revenue for the last 12 months
+			const monthlyRevenue = await Order.aggregate([
+				{ $unwind: '$items' },
+				{ $match: { 
+					'items.artisanId': artisanId,
+					createdAt: { $gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) }
+				}},
+				{ 
+					$group: { 
+						_id: { 
+							year: { $year: '$createdAt' }, 
+							month: { $month: '$createdAt' } 
+						}, 
+						revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+						orders: { $sum: 1 }
+					} 
+				},
+				{ $sort: { '_id.year': 1, '_id.month': 1 } }
+			])
+			
+			// Get top products
+			const topProducts = await Order.aggregate([
+				{ $unwind: '$items' },
+				{ $match: { 'items.artisanId': artisanId } },
+				{ $group: { 
+					_id: '$items.productId', 
+					name: { $first: '$items.name' },
+					totalSold: { $sum: '$items.quantity' },
+					revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+				}},
+				{ $sort: { revenue: -1 } },
+				{ $limit: 10 }
+			])
+			
+			res.json({
+				totalOrders,
+				totalRevenue,
+				ordersByStatus,
+				monthlyRevenue,
+				topProducts
+			})
+		} catch (error) {
+			console.error('Error fetching artisan analytics:', error)
+			res.status(500).json({ error: 'Failed to fetch analytics' })
+		}
+	}
+)
+
 export default router

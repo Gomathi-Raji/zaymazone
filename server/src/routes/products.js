@@ -231,6 +231,49 @@ router.delete('/:id', requireAuth, async (req, res) => {
 	return res.status(204).end()
 })
 
+// Artisan routes
+// Get artisan's products
+router.get('/artisan/my-products',
+	requireAuth,
+	validate(paginationSchema, 'query'),
+	async (req, res) => {
+		try {
+			const { page, limit, sort, order } = req.validatedQuery
+			const skip = (page - 1) * limit
+			
+			const sortObj = {}
+			if (sort) {
+				sortObj[sort] = order === 'asc' ? 1 : -1
+			} else {
+				sortObj.createdAt = -1
+			}
+			
+			const products = await Product.find({ artisanId: req.user._id })
+				.sort(sortObj)
+				.skip(skip)
+				.limit(limit)
+				.populate('artisanId', 'name')
+				.select('-__v')
+				.lean()
+			
+			const total = await Product.countDocuments({ artisanId: req.user._id })
+			
+			res.json({
+				products,
+				pagination: {
+					page,
+					limit,
+					total,
+					pages: Math.ceil(total / limit)
+				}
+			})
+		} catch (error) {
+			console.error('Error fetching artisan products:', error)
+			res.status(500).json({ error: 'Failed to fetch products' })
+		}
+	}
+)
+
 export default router
 
 

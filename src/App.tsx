@@ -47,6 +47,9 @@ const SignInArtisan = lazy(() => import("./pages/SignInArtisan"));
 const SignUpArtisan = lazy(() => import("./pages/SignUpArtisan"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ArtisanDashboard = lazy(() => import("./pages/ArtisanDashboard"));
+const ArtisanProducts = lazy(() => import("./pages/ArtisanProducts"));
+const ArtisanOrders = lazy(() => import("./pages/ArtisanOrders"));
+const ArtisanProfile = lazy(() => import("./pages/ArtisanProfile"));
 const MockPayment = lazy(() => import("./pages/MockPayment"));
 const Wishlist = lazy(() => import("./pages/Wishlist"));
 const Addresses = lazy(() => import("./pages/Addresses"));
@@ -122,6 +125,9 @@ const App = () => (
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/artisan-dashboard" element={<ArtisanDashboard />} />
+            <Route path="/artisan/products" element={<ArtisanProducts />} />
+            <Route path="/artisan/orders" element={<ArtisanOrders />} />
+            <Route path="/artisan/profile" element={<ArtisanProfile />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/addresses" element={<Addresses />} />
             

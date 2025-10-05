@@ -817,6 +817,15 @@ export const api = {
 	// Artisans
 	getArtisans: artisansApi.getAll,
 	getArtisan: artisansApi.getById,
+	getArtisanOrders: () => apiRequest<Order[]>('/api/orders/artisan/my-orders', { auth: true }),
+	getArtisanAnalytics: () => apiRequest<{
+		totalOrders: number;
+		totalRevenue: number;
+		ordersByStatus: Array<{ _id: string; count: number }>;
+		monthlyRevenue: Array<{ _id: { year: number; month: number }; revenue: number; orders: number }>;
+		topProducts: Array<{ _id: string; name: string; totalSold: number; revenue: number }>;
+	}>('/api/orders/artisan/analytics', { auth: true }),
+	getArtisanProducts: () => apiRequest<Product[]>('/api/products/artisan/my-products', { auth: true }),
 	// Images
 	uploadImage: imagesApi.upload,
 	
@@ -854,6 +863,65 @@ export const api = {
 	getFeaturedBlogPosts: blogApi.getFeatured,
 	likeBlogPost: blogApi.like,
 	getRelatedBlogPosts: blogApi.getRelated,
+
+	// Additional Artisan APIs
+	updateOrderStatus: (orderId: string, status: string) =>
+		apiRequest<Order>(`/api/orders/${orderId}/status`, {
+			method: 'PUT',
+			body: JSON.stringify({ status }),
+			auth: true
+		}),
+
+	getArtisanProfile: () =>
+		apiRequest<{
+			_id: string;
+			name: string;
+			email: string;
+			phone?: string;
+			avatar?: string;
+			bio?: string;
+			location?: { city: string; state: string; country: string };
+			specialization: string[];
+			experience: number;
+			languages: string[];
+			socialLinks?: { website?: string; instagram?: string; facebook?: string };
+			businessInfo?: {
+				businessName?: string;
+				gstNumber?: string;
+				panNumber?: string;
+				bankDetails?: { accountNumber?: string; ifscCode?: string; bankName?: string };
+			};
+			certifications: Array<{ name: string; issuer: string; year: number }>;
+			skills: string[];
+			workExperience: Array<{ role: string; organization: string; duration: string; description: string }>;
+			education: Array<{ degree: string; institution: string; year: number }>;
+			stats: { totalProducts: number; totalOrders: number; totalRevenue: number; averageRating: number; totalReviews: number };
+			createdAt: string;
+			updatedAt: string;
+		}>('/api/artisans/profile', { auth: true }),
+
+	updateArtisanProfile: (profileData: {
+		name?: string;
+		phone?: string;
+		bio?: string;
+		location?: { city: string; state: string; country: string };
+		specialization?: string[];
+		experience?: number;
+		languages?: string[];
+		socialLinks?: { website?: string; instagram?: string; facebook?: string };
+		businessInfo?: {
+			businessName?: string;
+			gstNumber?: string;
+			panNumber?: string;
+			bankDetails?: { accountNumber?: string; ifscCode?: string; bankName?: string };
+		};
+		skills?: string[];
+	}) =>
+		apiRequest<{ message: string }>('/api/artisans/profile', {
+			method: 'PUT',
+			body: JSON.stringify(profileData),
+			auth: true
+		}),
 };
 
 // Utility function to handle image URLs
