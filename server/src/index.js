@@ -46,6 +46,8 @@ const allowedOrigins = [
 	'http://localhost:8080', 
 	'http://localhost:8081', 
 	'http://localhost:5173',
+	'https://zaymazone.com',
+	'https://www.zaymazone.com',
 	'https://zaymazone-dev.netlify.app',
 	'https://zaymazone.netlify.app',
 	'https://zaymazone-taupe.vercel.app'

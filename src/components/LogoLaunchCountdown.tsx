@@ -15,6 +15,9 @@ const LogoLaunchCountdown = () => {
   const [isLaunched, setIsLaunched] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [showRevealButton, setShowRevealButton] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const [videoFinished, setVideoFinished] = useState(false);
+  const [posterClicks, setPosterClicks] = useState(0);
   const [manuallyClosed, setManuallyClosed] = useState(false);
   const fireworksRef = useRef<HTMLDivElement>(null);
   const fireworksInstance = useRef<Fireworks | null>(null);
@@ -268,7 +271,20 @@ const LogoLaunchCountdown = () => {
   };
 
   const handlePosterClick = () => {
+    const newClicks = posterClicks + 1;
+    setPosterClicks(newClicks);
+
+    if (newClicks >= 3) {
+      setShowVideo(true);
+      setPosterClicks(0); // Reset for next time
+    }
+  };
+
+  const handleVideoEnd = () => {
+    setShowVideo(false);
+    setVideoFinished(true);
     setShowRevealButton(true);
+    setPosterClicks(0); // Reset clicks for next time
   };
 
   const handleRevealNow = () => {
@@ -749,35 +765,49 @@ const LogoLaunchCountdown = () => {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.5 }}
           >
-            <motion.h2
-              className="text-3xl sm:text-5xl font-bold text-white mb-8"
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-            >
-              Logo Launch Countdown
-            </motion.h2>
-            <motion.p
-              className="text-white/70 mb-8 text-lg"
-              initial={{ y: -30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-            >
-              Get ready for something amazing! Our new logo launches in...
-            </motion.p>
+            {!videoFinished && (
+              <>
+                <motion.h2
+                  className="text-3xl sm:text-5xl font-bold text-white mb-8"
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.8 }}
+                >
+                  Logo Launch Countdown
+                </motion.h2>
+                <motion.p
+                  className="text-white/70 mb-8 text-lg"
+                  initial={{ y: -30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.8 }}
+                >
+                  Get ready for something amazing! Our new logo launches in...
+                </motion.p>
+              </>
+            )}
             <motion.div
               className="mb-8"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.8 }}
             >
-              <img
-                src="/logo-invitation.png"
-                alt="Logo Invitation"
-                className="w-32 h-32 sm:w-48 sm:h-48 mx-auto object-contain rounded-lg shadow-2xl cursor-pointer hover:scale-105 transition-transform duration-300"
-                onClick={handlePosterClick}
-                title="Click to reveal the logo now!"
-              />
+              {!showVideo ? (
+                <img
+                  src="/logo-invitation.png"
+                  alt="Logo Invitation"
+                  className="w-32 h-32 sm:w-48 sm:h-48 mx-auto object-contain rounded-lg shadow-2xl cursor-pointer hover:scale-105 transition-transform duration-300"
+                  onClick={handlePosterClick}
+                  title="Invitation Poster!"
+                />
+              ) : (
+                <video
+                  src="/logo-promo.mp4"
+                  className="fixed inset-0 w-full h-full object-cover z-50"
+                  autoPlay
+                  onEnded={handleVideoEnd}
+                  title="Watch the promo video"
+                />
+              )}
             </motion.div>
             <AnimatePresence>
               {showRevealButton && (
@@ -797,12 +827,14 @@ const LogoLaunchCountdown = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="flex justify-center items-center flex-wrap">
-              <TimeUnit value={timeLeft.days} label="Days" />
-              <TimeUnit value={timeLeft.hours} label="Hours" />
-              <TimeUnit value={timeLeft.minutes} label="Minutes" />
-              <TimeUnit value={timeLeft.seconds} label="Seconds" />
-            </div>
+            {!videoFinished && (
+              <div className="flex justify-center items-center flex-wrap">
+                <TimeUnit value={timeLeft.days} label="Days" />
+                <TimeUnit value={timeLeft.hours} label="Hours" />
+                <TimeUnit value={timeLeft.minutes} label="Minutes" />
+                <TimeUnit value={timeLeft.seconds} label="Seconds" />
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div
