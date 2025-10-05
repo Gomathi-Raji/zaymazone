@@ -3,12 +3,12 @@ import { logEvent } from "./security";
 // Determine API base URL based on environment
 const getApiBaseUrl = () => {
   // Check for explicit API URL from environment
-  if ((import.meta as any).env.VITE_API_URL) {
-    return ((import.meta as any).env.VITE_API_URL as string).replace('/api', '');
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace('/api', '');
   }
 
   // In development, use localhost
-  if ((import.meta as any).env.DEV) {
+  if (import.meta.env.DEV) {
     return "http://localhost:4000";
   }
 
@@ -22,7 +22,7 @@ const getApiBaseUrl = () => {
   }
 
   // For production deployments, assume backend is on the same domain or use environment variable
-  return (import.meta as any).env.VITE_BACKEND_URL || `${currentOrigin}/api`.replace('/api/api', '/api');
+  return import.meta.env.VITE_BACKEND_URL || `${currentOrigin}/api`.replace('/api/api', '/api');
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -246,6 +246,50 @@ export interface Review {
 	createdAt: string;
 }
 
+export interface Pagination {
+	page: number;
+	limit: number;
+	total: number;
+	totalPages: number;
+	hasNext: boolean;
+	hasPrev: boolean;
+}
+
+export interface Address {
+	fullName: string;
+	street?: string;
+	addressLine1?: string;
+	addressLine2?: string;
+	city: string;
+	state: string;
+	zipCode: string;
+	country: string;
+	phone: string;
+	email?: string;
+}
+
+export interface BlogPost {
+	id: string;
+	title: string;
+	slug: string;
+	content: string;
+	excerpt: string;
+	author: {
+		id: string;
+		name: string;
+		avatar?: string;
+	};
+	category: string;
+	tags: string[];
+	featuredImage?: string;
+	publishedAt: string;
+	updatedAt: string;
+	isPublished: boolean;
+	likes: number;
+	views: number;
+	readingTime: number;
+}
+
 export interface Artisan {
 	_id: string;
 	name: string;
@@ -334,7 +378,7 @@ export const productsApi = {
 			});
 		}
 		const queryString = searchParams.toString();
-		return apiRequest<{ products: Product[]; pagination: any }>(`/api/products${queryString ? `?${queryString}` : ''}`);
+		return apiRequest<{ products: Product[]; pagination: Pagination }>(`/api/products${queryString ? `?${queryString}` : ''}`);
 	},
 	
 	getById: (id: string) =>
@@ -374,7 +418,9 @@ export const imagesApi = {
 			const jwt = getAuthToken();
 			const token = firebaseToken || jwt;
 			if (token) headers['Authorization'] = `Bearer ${token}`;
-		} catch {}
+		} catch {
+			// Ignore localStorage errors in SSR or restricted environments
+		}
 
 		return fetch(url, {
 			method: 'POST',
@@ -432,7 +478,7 @@ export const ordersApi = {
 			});
 		}
 		const queryString = searchParams.toString();
-		return apiRequest<{ orders: Order[]; pagination: any }>(`/api/orders/my-orders${queryString ? `?${queryString}` : ''}`, { auth: true });
+		return apiRequest<{ orders: Order[]; pagination: Pagination }>(`/api/orders/my-orders${queryString ? `?${queryString}` : ''}`, { auth: true });
 	},
 	
 	getById: (id: string) =>
@@ -555,7 +601,7 @@ export const reviewsApi = {
 		const queryString = searchParams.toString();
 		return apiRequest<{ 
 			reviews: Review[]; 
-			pagination: any; 
+			pagination: Pagination; 
 			statistics: { 
 				averageRating: number; 
 				totalReviews: number; 
@@ -574,7 +620,7 @@ export const reviewsApi = {
 			});
 		}
 		const queryString = searchParams.toString();
-		return apiRequest<{ reviews: Review[]; pagination: any }>(`/api/reviews/my-reviews${queryString ? `?${queryString}` : ''}`, { auth: true });
+		return apiRequest<{ reviews: Review[]; pagination: Pagination }>(`/api/reviews/my-reviews${queryString ? `?${queryString}` : ''}`, { auth: true });
 	},
 	
 	create: (data: {
@@ -637,17 +683,17 @@ export const artisansApi = {
 };
 
 export const addressesApi = {
-	getAll: () => apiRequest<any[]>('/api/addresses', { auth: true }),
+	getAll: () => apiRequest<Address[]>('/api/addresses', { auth: true }),
 	
-	add: (address: any) => 
-		apiRequest<{ address: any }>('/api/addresses', {
+	add: (address: Address) => 
+		apiRequest<{ address: Address }>('/api/addresses', {
 			method: 'POST',
 			body: address,
 			auth: true
 		}),
 	
-	update: (id: string, address: any) => 
-		apiRequest<{ address: any }>(`/api/addresses/${id}`, {
+	update: (id: string, address: Address) => 
+		apiRequest<{ address: Address }>(`/api/addresses/${id}`, {
 			method: 'PUT',
 			body: address,
 			auth: true
@@ -685,13 +731,13 @@ export const blogApi = {
 		}
 		const queryString = searchParams.toString();
 		return apiRequest<{
-			posts: any[];
-			pagination: any;
+			posts: BlogPost[];
+			pagination: Pagination;
 		}>(`/api/blog${queryString ? `?${queryString}` : ''}`);
 	},
 
 	getById: (id: string) =>
-		apiRequest<any>(`/api/blog/${id}`),
+		apiRequest<BlogPost>(`/api/blog/${id}`),
 
 	getCategories: () =>
 		apiRequest<string[]>('/api/blog/categories'),
@@ -700,7 +746,7 @@ export const blogApi = {
 		apiRequest<string[]>('/api/blog/tags'),
 
 	getFeatured: () =>
-		apiRequest<any[]>('/api/blog/featured'),
+		apiRequest<BlogPost[]>('/api/blog/featured'),
 
 	like: (id: string) =>
 		apiRequest<{ message: string; likes: number }>(`/api/blog/${id}/like`, {
@@ -708,7 +754,7 @@ export const blogApi = {
 		}),
 
 	getRelated: (id: string) =>
-		apiRequest<any[]>(`/api/blog/${id}/related`),
+		apiRequest<BlogPost[]>(`/api/blog/${id}/related`),
 };
 
 // Unified API export
@@ -757,7 +803,7 @@ export const api = {
 	uploadImage: imagesApi.upload,
 	
 	// Wishlist
-	getWishlist: () => apiRequest<any[]>('/api/wishlist', { auth: true }),
+	getWishlist: () => apiRequest<Product[]>('/api/wishlist', { auth: true }),
 	addToWishlist: (productId: string) => 
 		apiRequest<{ message: string }>('/api/wishlist/add', {
 			method: 'POST',

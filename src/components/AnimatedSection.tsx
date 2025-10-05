@@ -24,7 +24,7 @@ export const AnimatedSection = ({
   const [ref, inView] = useInView({
     threshold: 0.1,
     triggerOnce: once,
-    rootMargin: '0px 0px -100px 0px', // Trigger when element is 100px from bottom of viewport
+    rootMargin: '0px 0px -50px 0px', // Reduced from -100px to -50px for better mobile support
   });
 
   const [hasAnimated, setHasAnimated] = useState(false);

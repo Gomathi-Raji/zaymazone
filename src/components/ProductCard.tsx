@@ -8,6 +8,7 @@ import { Product } from "@/lib/api";
 import { getImageUrl } from "@/lib/api";
 import { QuickViewDialog } from "./QuickViewDialog";
 import { LazyImage } from "./LazyImage";
+import { MobileOptimizedImage } from "./MobileOptimizedImage";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +21,8 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onQuickView, onAddToComparison }: ProductCardProps) => {
+  console.log('ProductCard rendered with product:', product?.id, product?.name);
+  
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -39,6 +42,23 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
     }
   }, [isInWishlist, product.id]);
 
+  // Early return if no product data
+  if (!product) {
+    console.warn('ProductCard: No product data provided');
+    return null;
+  }
+
+  // Ensure we have valid product data
+  const safeProduct = {
+    ...product,
+    images: product.images && product.images.length > 0 ? product.images : ['/placeholder.svg'],
+    name: product.name || 'Unknown Product',
+    price: product.price || 0,
+    rating: product.rating || 0,
+    stockCount: product.stockCount || 0,
+    originalPrice: product.originalPrice
+  };
+
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -48,13 +68,13 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
       return;
     }
     
-    if (product.stockCount === 0) {
+    if (safeProduct.stockCount === 0) {
       toast.error('This item is out of stock');
       return;
     }
 
     try {
-      await addToCart(product.id, 1);
+      await addToCart(safeProduct.id, 1);
 
       // Show success animation
       setShowSuccess(true);
@@ -73,7 +93,7 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
       return;
     }
     
-    if (product.stockCount === 0) {
+    if (safeProduct.stockCount === 0) {
       toast.error('This item is out of stock');
       return;
     }
@@ -82,7 +102,7 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
     navigate('/checkout', { 
       state: { 
         directPurchase: true, 
-        product: product, 
+        product: safeProduct, 
         quantity: 1 
       } 
     });
@@ -99,17 +119,17 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
     
     try {
       if (inWishlist) {
-        await removeFromWishlist(product.id);
+        await removeFromWishlist(safeProduct.id);
       } else {
-        await addToWishlist(product.id);
+        await addToWishlist(safeProduct.id);
       }
     } catch (error) {
       // Error is already handled in the wishlist context
     }
   };
   
-  const discountPercentage = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discountPercentage = safeProduct.originalPrice 
+    ? Math.round(((safeProduct.originalPrice - safeProduct.price) / safeProduct.originalPrice) * 100)
     : 0;
 
   return (
@@ -123,10 +143,10 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         {/* Desktop - Link to product page */}
-        <Link to={`/product/${product.id}`} className="hidden md:block">
+        <Link to={`/product/${safeProduct.id}`} className="hidden md:block">
           <LazyImage
-            src={getImageUrl(product.images[0])}
-            alt={product.name}
+            src={getImageUrl(safeProduct.images[0])}
+            alt={safeProduct.name}
             className="w-full h-full object-cover object-center cursor-pointer"
           />
         </Link>
@@ -139,9 +159,9 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
             setShowMobileActions(!showMobileActions);
           }}
         >
-          <LazyImage
-            src={getImageUrl(product.images[0])}
-            alt={product.name}
+          <MobileOptimizedImage
+            src={getImageUrl(safeProduct.images[0])}
+            alt={safeProduct.name}
             className="w-full h-full object-cover object-center"
           />
           {/* Touch hint */}
@@ -232,6 +252,21 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
                       <ShoppingCart className={`w-5 h-5 ${cartLoading ? 'animate-pulse' : ''}`} />
                     )}
                   </AnimatePresence>
+                </Button>
+
+                {/* Buy Now */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 rounded-full hover:scale-105 transition-transform text-gray-100/90"
+                  onClick={() => {
+                    handleBuyNow();
+                    setShowMobileActions(false);
+                  }}
+                  disabled={!safeProduct.inStock || safeProduct.stockCount === 0}
+                  title="Buy Now"
+                >
+                  <ShoppingBag className="w-5 h-5" />
                 </Button>
 
                 {/* Quick View */}
@@ -354,7 +389,7 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
         <div className="flex items-start justify-between mb-1">
           <Link to={`/product/${product.id}`}>
             <h3 className="font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors cursor-pointer text-xs sm:text-sm leading-tight">
-              {product.name}
+              {safeProduct.name}
             </h3>
           </Link>
         </div>
@@ -371,14 +406,14 @@ export const ProductCard = ({ product, onQuickView, onAddToComparison }: Product
         <div className="flex items-center gap-1 mb-2">
           <div className="flex items-center gap-1">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span className="text-xs font-medium">{product.rating}</span>
+            <span className="text-xs font-medium">{safeProduct.rating || 0}</span>
           </div>
           <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
         </div>
 
         {/* Price */}
         <div className="flex items-center gap-1 mb-3 flex-wrap">
-          <span className="text-sm font-bold text-foreground">₹{product.price.toLocaleString()}</span>
+          <span className="text-sm font-bold text-foreground">₹{safeProduct.price.toLocaleString()}</span>
           {product.originalPrice && (
             <span className="text-xs text-muted-foreground line-through">
               ₹{product.originalPrice.toLocaleString()}

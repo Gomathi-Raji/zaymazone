@@ -153,7 +153,7 @@ const ProductDetail = () => {
             "aggregateRating": product.rating ? {
               "@type": "AggregateRating",
               "ratingValue": product.rating,
-              "reviewCount": product.totalRatings || 0
+              "reviewCount": product.reviewCount || 0
             } : undefined
           }}
         />

@@ -39,7 +39,7 @@ const Shop = () => {
   const filteredAndSortedProducts = useMemo(() => {
     if (!productsData?.products) return [];
     
-    let filtered = productsData.products.filter(product => {
+    const filtered = productsData.products.filter(product => {
       // Search query
       if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !product.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -187,7 +187,7 @@ const Shop = () => {
               </p>
             </div>
           ) : filteredAndSortedProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
               {filteredAndSortedProducts.map(product => (
                 <ProductCard
                   key={product.id}

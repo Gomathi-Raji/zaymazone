@@ -899,6 +899,23 @@ All colors MUST be HSL.
     overflow: hidden;
   }
 
+  /* Enhanced mobile product card styling */
+  .mobile-product-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 640px) {
+    .mobile-product-card {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .mobile-product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
   .mobile-product-grid > * {
     min-width: 0;
     max-width: 100%;
@@ -941,7 +958,25 @@ All colors MUST be HSL.
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
-    padding: 0.5rem;
+  }
+
+  /* Featured products mobile grid */
+  @media (max-width: 768px) {
+    .mobile-featured-grid {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 1.5rem !important;
+      width: 100% !important;
+    }
+    
+    .mobile-featured-grid > * {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    .mobile-product-card .p-3 {
+      padding: 0.5rem;
+    }
   }
 
   @media (max-width: 480px) {

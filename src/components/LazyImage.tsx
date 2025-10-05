@@ -7,6 +7,7 @@ interface LazyImageProps {
   alt: string;
   className?: string;
   placeholder?: string;
+  priority?: boolean; // Skip lazy loading for important images
   onLoad?: () => void;
   onError?: () => void;
 }
@@ -16,6 +17,7 @@ export const LazyImage = ({
   alt,
   className,
   placeholder = "/placeholder.svg",
+  priority = false,
   onLoad,
   onError
 }: LazyImageProps) => {
@@ -25,15 +27,49 @@ export const LazyImage = ({
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Check if device is mobile - use state to make it reactive
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768; // md breakpoint
+  });
+
+  // Update mobile state on window resize
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Set initial state to load immediately for priority images or mobile
+  useEffect(() => {
+    if (priority || isMobile) {
+      setIsInView(true);
+    }
+  }, [priority, isMobile]);
+
+  useEffect(() => {
+    // Skip lazy loading for priority images or mobile
+    if (priority || isMobile) {
+      return;
+    }
+
     const img = imgRef.current;
     if (!img) return;
+
+    // Set a shorter timeout fallback to ensure images load quickly
+    const fallbackTimer = setTimeout(() => {
+      setIsInView(true);
+    }, 500);
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
           setIsInView(true);
+          clearTimeout(fallbackTimer);
           observerRef.current?.disconnect();
         }
       },
@@ -43,9 +79,10 @@ export const LazyImage = ({
     observerRef.current.observe(img);
 
     return () => {
+      clearTimeout(fallbackTimer);
       observerRef.current?.disconnect();
     };
-  }, []);
+  }, [isMobile, priority]);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -76,7 +113,7 @@ export const LazyImage = ({
       {/* Main image */}
       <motion.img
         ref={imgRef}
-        src={isInView ? src : placeholder}
+        src={priority || isMobile || isInView ? (hasError ? placeholder : src) : placeholder}
         alt={alt}
         className={cn(
           "w-full h-full object-cover transition-all duration-500",
@@ -85,7 +122,7 @@ export const LazyImage = ({
         onLoad={handleLoad}
         onError={handleError}
         initial={{ opacity: 0 }}
-        animate={{ opacity: isLoaded ? 1 : 0.8 }}
+        animate={{ opacity: isLoaded || hasError ? 1 : 0.8 }}
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       />
 

@@ -8,7 +8,7 @@ export const HeroSection = () => {
   const titleWords = ["Crafting Culture.", "Empowering Artisans."];
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden mobile-section">
+    <section className="relative min-h-[70vh] md:min-h-screen flex items-center justify-center overflow-hidden mobile-section">
       {/* Background Image with Parallax */}
       <motion.div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
