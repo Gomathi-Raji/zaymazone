@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import Artisan from '../models/Artisan.js';
-import { authenticateToken } from '../middleware/firebase-auth.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -122,7 +122,22 @@ router.post('/', upload.fields([
     }
 
     const data = validationResult.data;
-    const userId = req.user._id;
+    
+    // Find or create user based on email
+    let user = await User.findOne({ email: data.email });
+    if (!user) {
+      // Create a new user account
+      user = new User({
+        email: data.email,
+        name: data.ownerName,
+        authProvider: 'form',
+        isEmailVerified: false, // Mark as unverified since no password/email verification
+        lastLogin: new Date()
+      });
+      await user.save();
+    }
+
+    const userId = user._id;
 
     // Handle file uploads
     const uploadedFiles = req.files;

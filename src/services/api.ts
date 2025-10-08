@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { apiRequest } from '@/lib/api';
 
 // Base API configuration
 let API_BASE_URL: string;
@@ -190,12 +190,9 @@ export const sellerApi = {
 
   // Verify bank account and save form
   async verifyBankAccount(formData: SellerFormData) {
-    const response = await fetch(`${API_BASE_URL}/api/verify/bank-account`, {
+    return apiRequest('/api/verify/bank-account', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+      body: {
         accountNumber: formData.accountNumber,
         ifscCode: formData.ifscCode,
         bankName: formData.bankName,
@@ -210,9 +207,9 @@ export const sellerApi = {
         experience: parseInt(formData.yearsOfExperience) || 0,
         socials: {},
         documentType: formData.aadhaarNumber ? 'aadhar' : 'pan',
-        documentNumber: formData.aadhaarNumber || formData.panNumber
-      }),
+        documentNumber: formData.aadhaarNumber || formData.panNumber,
+        email: formData.email
+      }
     });
-    return handleResponse(response);
   }
 };

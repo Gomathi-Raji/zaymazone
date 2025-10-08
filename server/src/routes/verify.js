@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import Artisan from '../models/Artisan.js';
-import { authenticateToken } from '../middleware/firebase-auth.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -26,12 +26,13 @@ const bankVerificationSchema = z.object({
     website: z.string().url().optional()
   }).optional(),
   documentType: z.enum(['aadhar', 'pan', 'license']),
-  documentNumber: z.string().min(1)
+  documentNumber: z.string().min(1),
+  email: z.string().email().optional() // Add email for user lookup/creation
 });
 
 /**
  * POST /api/verify/bank-account
- * Validate bank account format with regex and store seller onboarding form
+ * Validate bank account format and store seller onboarding form
  */
 router.post('/bank-account', async (req, res) => {
   try {
@@ -55,10 +56,35 @@ router.post('/bank-account', async (req, res) => {
       experience,
       socials,
       documentType,
-      documentNumber
+      documentNumber,
+      email
     } = validationResult.data;
 
-    const userId = req.user._id;
+    // Find or create user based on email
+    let user;
+    if (email) {
+      user = await User.findOne({ email });
+      if (!user) {
+        // Create a new user account
+        user = new User({
+          email,
+          name: name || email.split('@')[0],
+          authProvider: 'form',
+          isEmailVerified: false, // Mark as unverified since no password/email verification
+          lastLogin: new Date()
+        });
+        await user.save();
+      }
+    } else if (req.user) {
+      // Use authenticated user if available
+      user = req.user;
+    } else {
+      return res.status(400).json({
+        error: 'Email is required for form submission'
+      });
+    }
+
+    const userId = user._id;
 
     // Check if artisan already exists
     let artisan = await Artisan.findOne({ userId });
