@@ -113,9 +113,6 @@ export const sellerApi = {
 
     const response = await fetch(`${API_BASE_URL}/api/seller-onboarding`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('firebase_id_token') || ''}`
-      },
       body: data,
     });
 
@@ -197,7 +194,6 @@ export const sellerApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('firebase_id_token') || ''}`
       },
       body: JSON.stringify({
         accountNumber: formData.accountNumber,

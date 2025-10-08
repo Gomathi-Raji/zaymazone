@@ -37,6 +37,62 @@ export default function SellerOnboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [formData, setFormData] = useState({
+    // Step 1: Basic Info
+    businessName: "",
+    ownerName: "",
+    email: "",
+    phone: "",
+    address: {
+      village: "",
+      district: "",
+      state: "",
+      pincode: ""
+    },
+    yearsOfExperience: "",
+    profilePhoto: null,
+    productPhotos: [],
+
+    // Step 2: Seller Type & Verification
+    sellerType: "", // "gst" or "non-gst"
+    gstNumber: "",
+    gstCertificate: null,
+    aadhaarNumber: "",
+    aadhaarProof: null,
+    panNumber: "",
+    
+    // Step 3: Product Details
+    categories: [],
+    productDescription: "",
+    materials: "",
+    priceRange: {
+      min: "",
+      max: ""
+    },
+    stockQuantity: "",
+    
+    // Step 4: Shipping & Delivery
+    pickupAddress: {
+      sameAsMain: true,
+      address: ""
+    },
+    dispatchTime: "",
+    packagingType: "",
+    
+    // Step 5: Bank Details
+    bankName: "",
+    accountNumber: "",
+    ifscCode: "",
+    upiId: "",
+    paymentFrequency: "",
+    
+    // Step 6: Seller Story
+    story: "",
+    craftVideo: null
+  });
+
+  const { errors, validateStep } = useFormValidation(formData);
+
   // File upload handlers
   const handleFileUpload = (file: File, type: 'image' | 'document' | 'video', maxSize: number) => {
     if (!file) return null;
@@ -192,60 +248,6 @@ export default function SellerOnboarding() {
     }
   };
 
-  const [formData, setFormData] = useState({
-    // Step 1: Basic Info
-    businessName: "",
-    ownerName: "",
-    email: "",
-    phone: "",
-    address: {
-      village: "",
-      district: "",
-      state: "",
-      pincode: ""
-    },
-    yearsOfExperience: "",
-    profilePhoto: null,
-    productPhotos: [],
-
-    // Step 2: Seller Type & Verification
-    sellerType: "", // "gst" or "non-gst"
-    gstNumber: "",
-    gstCertificate: null,
-    aadhaarNumber: "",
-    aadhaarProof: null,
-    panNumber: "",
-    
-    // Step 3: Product Details
-    categories: [],
-    productDescription: "",
-    materials: "",
-    priceRange: {
-      min: "",
-      max: ""
-    },
-    stockQuantity: "",
-    
-    // Step 4: Shipping & Delivery
-    pickupAddress: {
-      sameAsMain: true,
-      address: ""
-    },
-    dispatchTime: "",
-    packagingType: "",
-    
-    // Step 5: Bank Details
-    bankName: "",
-    accountNumber: "",
-    ifscCode: "",
-    upiId: "",
-    paymentFrequency: "",
-    
-    // Step 6: Seller Story
-    story: "",
-    craftVideo: null
-  });
-
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
@@ -306,8 +308,6 @@ export default function SellerOnboarding() {
     { icon: MessageSquare, title: "Customer Connect", desc: "Direct customer support" },
     { icon: Award, title: "Master Artisan", desc: "Earn craft excellence badges" }
   ];
-
-  const { errors, validateStep } = useFormValidation(formData);
 
   const handleNext = async () => {
     if (validateStep(currentStep)) {

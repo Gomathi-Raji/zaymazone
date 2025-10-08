@@ -95,7 +95,7 @@ const sellerOnboardingSchema = z.object({
  * POST /api/seller-onboarding
  * Complete seller onboarding with file uploads
  */
-router.post('/', authenticateToken, upload.fields([
+router.post('/', upload.fields([
   { name: 'profilePhoto', maxCount: 1 },
   { name: 'productPhotos', maxCount: 10 },
   { name: 'gstCertificate', maxCount: 1 },

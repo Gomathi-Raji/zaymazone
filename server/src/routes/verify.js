@@ -33,7 +33,7 @@ const bankVerificationSchema = z.object({
  * POST /api/verify/bank-account
  * Validate bank account format with regex and store seller onboarding form
  */
-router.post('/bank-account', authenticateToken, async (req, res) => {
+router.post('/bank-account', async (req, res) => {
   try {
     const validationResult = bankVerificationSchema.safeParse(req.body);
 
