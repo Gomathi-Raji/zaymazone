@@ -46,7 +46,7 @@ const sellerOnboardingSchema = z.object({
   // Basic Info
   businessName: z.string().min(1).max(200),
   ownerName: z.string().min(1).max(200),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   phone: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
   address: z.object({
     village: z.string().optional(),
@@ -104,34 +104,64 @@ router.post('/', upload.fields([
 ]), async (req, res) => {
   try {
     // Parse form data
-    const formData = {
-      ...req.body,
-      address: JSON.parse(req.body.address || '{}'),
-      priceRange: JSON.parse(req.body.priceRange || '{}'),
-      pickupAddress: JSON.parse(req.body.pickupAddress || '{}'),
-      categories: req.body.categories ? (Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories]) : []
-    };
+    let formData;
+    try {
+      formData = {
+        ...req.body,
+        address: req.body.address ? JSON.parse(req.body.address) : {},
+        priceRange: req.body.priceRange ? JSON.parse(req.body.priceRange) : { min: '', max: '' },
+        pickupAddress: req.body.pickupAddress ? JSON.parse(req.body.pickupAddress) : { sameAsMain: true, address: '' },
+        categories: req.body.categories ? (Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories]) : []
+      };
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      return res.status(400).json({
+        error: 'Invalid form data format',
+        details: 'Failed to parse JSON fields'
+      });
+    }
+
+    console.log('Parsed form data:', JSON.stringify(formData, null, 2));
 
     // Validate form data
     const validationResult = sellerOnboardingSchema.safeParse(formData);
     if (!validationResult.success) {
+      console.error('Validation failed:', validationResult.error.errors);
       return res.status(400).json({
         error: 'Validation failed',
-        details: validationResult.error.errors
+        details: validationResult.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code
+        }))
       });
     }
 
     const data = validationResult.data;
     
-    // Find or create user based on email
-    let user = await User.findOne({ email: data.email });
-    if (!user) {
-      // Create a new user account
+    // Find or create user based on email (if provided)
+    let user;
+    if (data.email) {
+      user = await User.findOne({ email: data.email });
+      if (!user) {
+        // Create a new user account
+        user = new User({
+          email: data.email,
+          name: data.ownerName,
+          authProvider: 'form',
+          isEmailVerified: false, // Mark as unverified since no password/email verification
+          lastLogin: new Date()
+        });
+        await user.save();
+      }
+    } else {
+      // Create anonymous user with generated email
+      const generatedEmail = `anonymous-${Date.now()}@zaymazone.local`;
       user = new User({
-        email: data.email,
+        email: generatedEmail,
         name: data.ownerName,
-        authProvider: 'form',
-        isEmailVerified: false, // Mark as unverified since no password/email verification
+        authProvider: 'anonymous',
+        isEmailVerified: false,
         lastLogin: new Date()
       });
       await user.save();
