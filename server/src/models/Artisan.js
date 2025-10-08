@@ -29,6 +29,50 @@ const artisanSchema = new mongoose.Schema({
 		},
 		verifiedAt: { type: Date }
 	},
+	// Seller onboarding specific fields
+	businessInfo: {
+		businessName: { type: String, trim: true },
+		sellerType: { type: String, enum: ['gst', 'non-gst'] },
+		gstNumber: { type: String, trim: true },
+		panNumber: { type: String, trim: true },
+		contact: {
+			email: { type: String, trim: true },
+			phone: { type: String, trim: true },
+			address: {
+				village: { type: String, trim: true },
+				district: { type: String, trim: true },
+				state: { type: String, trim: true },
+				pincode: { type: String, trim: true }
+			}
+		}
+	},
+	productInfo: {
+		description: { type: String, maxLength: 1000 },
+		materials: { type: String, maxLength: 500 },
+		priceRange: {
+			min: { type: Number, min: 0 },
+			max: { type: Number, min: 0 }
+		},
+		stockQuantity: { type: Number, min: 0 },
+		photos: [{ type: String }] // Array of photo URLs
+	},
+	logistics: {
+		pickupAddress: {
+			sameAsMain: { type: Boolean, default: true },
+			address: { type: String, trim: true }
+		},
+		dispatchTime: { type: String, trim: true },
+		packagingType: { type: String, trim: true }
+	},
+	documents: {
+		gstCertificate: { type: String, trim: true },
+		aadhaarProof: { type: String, trim: true },
+		craftVideo: { type: String, trim: true }
+	},
+	payment: {
+		upiId: { type: String, trim: true },
+		paymentFrequency: { type: String, trim: true }
+	},
 	rating: { type: Number, min: 0, max: 5, default: 0 },
 	totalRatings: { type: Number, default: 0 },
 	totalProducts: { type: Number, default: 0 },

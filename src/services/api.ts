@@ -4,11 +4,11 @@ import axios from 'axios';
 let API_BASE_URL: string;
 
 try {
-  API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+  API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://zaymazone-backend.onrender.com';
   console.log('API configured with base URL:', API_BASE_URL);
 } catch (error) {
   console.warn('Environment variable not found, using default API URL');
-  API_BASE_URL = 'http://localhost:3001/api';
+  API_BASE_URL = 'https://zaymazone-backend.onrender.com';
 }
 
 // Create axios instance
@@ -55,6 +55,7 @@ export interface SellerFormData {
   };
   yearsOfExperience: string;
   profilePhoto: File | null;
+  productPhotos: File[];
   sellerType: string;
   gstNumber: string;
   gstCertificate: File | null;
@@ -69,7 +70,6 @@ export interface SellerFormData {
     max: string;
   };
   stockQuantity: string;
-  productPhotos: File[];
   pickupAddress: {
     sameAsMain: boolean;
     address: string;
@@ -86,65 +86,94 @@ export interface SellerFormData {
 }
 
 export const sellerApi = {
-  // Seller registration
-  async registerSeller(data: SellerFormData) {
-    // First, handle all file uploads
-    const uploadPromises = [];
+  // Complete seller onboarding with file uploads
+  async completeOnboarding(formData: SellerFormData) {
+    const data = new FormData();
     
-    if (data.profilePhoto) {
-      uploadPromises.push(
-        uploadFile(data.profilePhoto, 'image')
-          .then(res => ({ profilePhotoUrl: res.url }))
-      );
-    }
-    
-    if (data.gstCertificate) {
-      uploadPromises.push(
-        uploadFile(data.gstCertificate, 'document')
-          .then(res => ({ gstCertificateUrl: res.url }))
-      );
-    }
-    
-    if (data.aadhaarProof) {
-      uploadPromises.push(
-        uploadFile(data.aadhaarProof, 'document')
-          .then(res => ({ aadhaarProofUrl: res.url }))
-      );
-    }
-    
-    if (data.productPhotos.length > 0) {
-      const productPhotoPromises = data.productPhotos.map(photo =>
-        uploadFile(photo, 'image')
-      );
-      uploadPromises.push(
-        Promise.all(productPhotoPromises)
-          .then(results => ({ productPhotoUrls: results.map(r => r.url) }))
-      );
-    }
-    
-    if (data.craftVideo) {
-      uploadPromises.push(
-        uploadFile(data.craftVideo, 'video')
-          .then(res => ({ craftVideoUrl: res.url }))
-      );
-    }
+    // Add basic fields
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'address' || key === 'priceRange' || key === 'pickupAddress') {
+        data.append(key, JSON.stringify(value));
+      } else if (key === 'profilePhoto' || key === 'gstCertificate' || key === 'aadhaarProof' || key === 'craftVideo') {
+        if (value) data.append(key, value);
+      } else if (key === 'productPhotos') {
+        if (Array.isArray(value)) {
+          value.forEach((file, index) => {
+            data.append(`productPhotos`, file);
+          });
+        }
+      } else if (key === 'categories') {
+        if (Array.isArray(value)) {
+          value.forEach(cat => data.append('categories', cat));
+        }
+      } else {
+        data.append(key, String(value));
+      }
+    });
 
-    // Wait for all uploads to complete
-    const uploadResults = await Promise.all(uploadPromises);
-    const fileUrls = Object.assign({}, ...uploadResults);
+    const response = await fetch(`${API_BASE_URL}/api/seller-onboarding`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('firebase_id_token') || ''}`
+      },
+      body: data,
+    });
 
-    // Prepare the final data object
+    return handleResponse(response);
+  },
+
+  // Register seller (legacy - kept for compatibility)
+  async registerSeller(formData: SellerFormData) {
+    const data = new FormData();
+    
+    // Add basic fields
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'address' || key === 'priceRange' || key === 'pickupAddress') {
+        data.append(key, JSON.stringify(value));
+      } else if (key === 'profilePhoto' || key === 'gstCertificate' || key === 'aadhaarProof' || key === 'craftVideo') {
+        if (value) data.append(key, value);
+      } else if (key === 'productPhotos') {
+        if (Array.isArray(value)) {
+          value.forEach((file, index) => {
+            data.append(`productPhotos`, file);
+          });
+        }
+      } else if (key === 'categories') {
+        if (Array.isArray(value)) {
+          value.forEach(cat => data.append('categories', cat));
+        }
+      } else {
+        data.append(key, String(value));
+      }
+    });
+
     const finalData = {
-      ...data,
-      ...fileUrls,
-      profilePhoto: undefined,
-      gstCertificate: undefined,
-      aadhaarProof: undefined,
-      productPhotos: undefined,
-      craftVideo: undefined,
+      businessName: formData.businessName,
+      ownerName: formData.ownerName,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      yearsOfExperience: formData.yearsOfExperience,
+      sellerType: formData.sellerType,
+      gstNumber: formData.gstNumber,
+      aadhaarNumber: formData.aadhaarNumber,
+      panNumber: formData.panNumber,
+      categories: formData.categories,
+      productDescription: formData.productDescription,
+      materials: formData.materials,
+      priceRange: formData.priceRange,
+      stockQuantity: formData.stockQuantity,
+      pickupAddress: formData.pickupAddress,
+      dispatchTime: formData.dispatchTime,
+      packagingType: formData.packagingType,
+      bankName: formData.bankName,
+      accountNumber: formData.accountNumber,
+      ifscCode: formData.ifscCode,
+      upiId: formData.upiId,
+      paymentFrequency: formData.paymentFrequency,
+      story: formData.story
     };
 
-    // Send the registration request
     const response = await fetch(`${API_BASE_URL}/sellers/register`, {
       method: 'POST',
       headers: {
@@ -162,14 +191,31 @@ export const sellerApi = {
     return handleResponse(response);
   },
 
-  // Verify bank account
-  async verifyBankAccount(ifsc: string, accountNumber: string) {
-    const response = await fetch(`${API_BASE_URL}/verify/bank-account`, {
+  // Verify bank account and save form
+  async verifyBankAccount(formData: SellerFormData) {
+    const response = await fetch(`${API_BASE_URL}/api/verify/bank-account`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('firebase_id_token') || ''}`
       },
-      body: JSON.stringify({ ifsc, accountNumber }),
+      body: JSON.stringify({
+        accountNumber: formData.accountNumber,
+        ifscCode: formData.ifscCode,
+        bankName: formData.bankName,
+        name: formData.ownerName || formData.businessName,
+        bio: formData.story || '',
+        location: {
+          city: formData.address.district || formData.address.village,
+          state: formData.address.state,
+          country: 'India'
+        },
+        specialties: formData.categories || [],
+        experience: parseInt(formData.yearsOfExperience) || 0,
+        socials: {},
+        documentType: formData.aadhaarNumber ? 'aadhar' : 'pan',
+        documentNumber: formData.aadhaarNumber || formData.panNumber
+      }),
     });
     return handleResponse(response);
   }

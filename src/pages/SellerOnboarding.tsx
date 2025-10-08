@@ -206,8 +206,6 @@ export default function SellerOnboarding() {
     },
     yearsOfExperience: "",
     profilePhoto: null,
-    
-    // Product Photos
     productPhotos: [],
 
     // Step 2: Seller Type & Verification
@@ -227,7 +225,6 @@ export default function SellerOnboarding() {
       max: ""
     },
     stockQuantity: "",
-    productPhotos: [],
     
     // Step 4: Shipping & Delivery
     pickupAddress: {
@@ -335,7 +332,7 @@ export default function SellerOnboarding() {
       if (currentStep === 5) {
         setIsLoading(true);
         try {
-          await sellerApi.verifyBankAccount(formData.ifscCode, formData.accountNumber);
+          await sellerApi.verifyBankAccount(formData);
           setCurrentStep(currentStep + 1);
         } catch (error) {
           toast({
@@ -380,7 +377,7 @@ export default function SellerOnboarding() {
 
     setIsSubmitting(true);
     try {
-      await sellerApi.registerSeller(formData);
+      await sellerApi.completeOnboarding(formData);
       toast({
         title: "Application Submitted Successfully!",
         description: "Redirecting to confirmation page...",
