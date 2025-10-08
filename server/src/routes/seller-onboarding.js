@@ -46,10 +46,12 @@ const sellerOnboardingSchema = z.object({
   // Basic Info
   businessName: z.string().min(1).max(200),
   ownerName: z.string().min(1).max(200),
-  email: z.string().email().optional(),
+  email: z.string().optional().refine((val) => !val || val === '' || z.string().email().safeParse(val).success, {
+    message: 'Invalid email format'
+  }),
   phone: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
   address: z.object({
-    village: z.string().optional(),
+    village: z.string().min(1, 'Village/Town is required'),
     district: z.string().min(1),
     state: z.string().min(1),
     pincode: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits')
@@ -58,7 +60,10 @@ const sellerOnboardingSchema = z.object({
   // Experience & Type
   yearsOfExperience: z.string().regex(/^\d+$/, 'Years of experience must be a number'),
   sellerType: z.enum(['gst', 'non-gst']),
-  gstNumber: z.string().optional(),
+  gstNumber: z.string().optional().refine((val) => {
+    // Only validate GST if sellerType is 'gst'
+    return true; // We'll handle this in the route logic
+  }),
   aadhaarNumber: z.string().regex(/^\d{12}$/, 'Aadhaar number must be 12 digits'),
   panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN number format'),
 
@@ -103,6 +108,9 @@ router.post('/', upload.fields([
   { name: 'craftVideo', maxCount: 1 }
 ]), async (req, res) => {
   try {
+    console.log('Raw request body:', req.body);
+    console.log('Uploaded files:', req.files);
+
     // Parse form data
     let formData;
     try {
@@ -138,6 +146,33 @@ router.post('/', upload.fields([
     }
 
     const data = validationResult.data;
+
+    // Additional validation for GST number based on seller type
+    if (data.sellerType === 'gst' && (!data.gstNumber || data.gstNumber.trim() === '')) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: [{
+          field: 'gstNumber',
+          message: 'GST number is required for GST registered sellers',
+          code: 'custom'
+        }]
+      });
+    }
+
+    // Validate GST number format if provided
+    if (data.gstNumber && data.gstNumber.trim() !== '') {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstRegex.test(data.gstNumber.toUpperCase())) {
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: [{
+            field: 'gstNumber',
+            message: 'Invalid GST number format',
+            code: 'custom'
+          }]
+        });
+      }
+    }
     
     // Find or create user based on email (if provided)
     let user;

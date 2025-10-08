@@ -99,7 +99,14 @@ export const sellerApi = {
           value.forEach(cat => data.append('categories', cat));
         }
       } else {
-        data.append(key, String(value));
+        // Don't send empty strings for optional fields
+        if (key === 'email' || key === 'gstNumber' || key === 'upiId' || key === 'story') {
+          if (value && String(value).trim() !== '') {
+            data.append(key, String(value));
+          }
+        } else {
+          data.append(key, String(value));
+        }
       }
     });
 
