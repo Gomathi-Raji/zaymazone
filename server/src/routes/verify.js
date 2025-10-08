@@ -31,6 +31,44 @@ const bankVerificationSchema = z.object({
 });
 
 /**
+ * GET /api/verify/bank-account
+ * Get information about bank account verification endpoint
+ */
+router.get('/bank-account', (req, res) => {
+  res.json({
+    message: 'Bank Account Verification Endpoint',
+    method: 'POST',
+    description: 'Validates bank account format using regex and stores seller onboarding form data. Creates user account if email not found.',
+    requiredFields: [
+      'accountNumber (9-18 digits)',
+      'ifscCode (format: AAAA0AAAAA)',
+      'bankName',
+      'name',
+      'location.city',
+      'location.state',
+      'documentType (aadhar|pan|license)',
+      'documentNumber',
+      'email (optional, creates user account if not exists)'
+    ],
+    optionalFields: [
+      'bio',
+      'specialties',
+      'experience',
+      'socials'
+    ],
+    response: {
+      success: true,
+      message: 'Form validated and stored successfully',
+      artisan: {
+        id: 'artisan_id',
+        name: 'artisan_name',
+        isVerified: true
+      }
+    }
+  });
+});
+
+/**
  * POST /api/verify/bank-account
  * Validate bank account format and store seller onboarding form
  */

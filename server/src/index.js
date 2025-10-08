@@ -101,7 +101,7 @@ app.get('/', (_req, res) => res.json({
 		reviews: ['GET /api/reviews/product/:productId', 'GET /api/reviews/my-reviews', 'POST /api/reviews', 'PATCH /api/reviews/:id'],
 		wishlist: ['GET /api/wishlist', 'POST /api/wishlist/add', 'DELETE /api/wishlist/item/:productId', 'DELETE /api/wishlist/clear'],
 		images: ['GET /api/images/:filename', 'GET /api/images/:filename/info'],
-		verify: ['POST /api/verify/bank-account'],
+		verify: ['GET /api/verify/bank-account', 'POST /api/verify/bank-account'],
 		sellerOnboarding: ['POST /api/seller-onboarding']
 	}
 }))
