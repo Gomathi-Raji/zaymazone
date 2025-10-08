@@ -409,4 +409,60 @@ async function updateProductRating(productId) {
 	})
 }
 
+// Get reviews for artisan's products
+router.get('/artisan/my-reviews',
+	requireAuth,
+	requireActiveUser,
+	validate(paginationSchema, 'query'),
+	async (req, res) => {
+		try {
+			const { page, limit, sort, order } = req.validatedQuery
+			const skip = (page - 1) * limit
+			
+			const sortObj = {}
+			if (sort) {
+				sortObj[sort] = order === 'asc' ? 1 : -1
+			} else {
+				sortObj.createdAt = -1
+			}
+			
+			// Find all products by this artisan
+			const artisanProducts = await Product.find({ artisanId: req.user.sub }).select('_id')
+			const productIds = artisanProducts.map(p => p._id)
+			
+			const reviews = await Review.find({ 
+				productId: { $in: productIds },
+				isApproved: true 
+			})
+				.sort(sortObj)
+				.skip(skip)
+				.limit(limit)
+				.populate('userId', 'name avatar')
+				.populate('productId', 'name images')
+				.populate('orderId', 'orderNumber')
+				.populate('response.respondedBy', 'name')
+				.select('-__v')
+				.lean()
+			
+			const total = await Review.countDocuments({ 
+				productId: { $in: productIds },
+				isApproved: true 
+			})
+			
+			res.json({
+				reviews,
+				pagination: {
+					page,
+					limit,
+					total,
+					pages: Math.ceil(total / limit)
+				}
+			})
+		} catch (error) {
+			console.error('Error fetching artisan reviews:', error)
+			res.status(500).json({ error: 'Failed to fetch reviews' })
+		}
+	}
+)
+
 export default router

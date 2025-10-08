@@ -428,14 +428,29 @@ router.get('/artisan/analytics',
 	async (req, res) => {
 		try {
 			const artisanId = req.user._id
+			const { startDate, endDate } = req.query
+			
+			// Build date filter
+			let dateFilter = {}
+			if (startDate || endDate) {
+				dateFilter.createdAt = {}
+				if (startDate) dateFilter.createdAt.$gte = new Date(startDate)
+				if (endDate) dateFilter.createdAt.$lte = new Date(endDate)
+			}
 			
 			// Get total orders for this artisan
-			const totalOrders = await Order.countDocuments({ 'items.artisanId': artisanId })
+			const totalOrders = await Order.countDocuments({ 
+				'items.artisanId': artisanId,
+				...dateFilter
+			})
 			
 			// Get total revenue for this artisan
 			const revenueResult = await Order.aggregate([
 				{ $unwind: '$items' },
-				{ $match: { 'items.artisanId': artisanId } },
+				{ $match: { 
+					'items.artisanId': artisanId,
+					...(startDate || endDate ? { createdAt: dateFilter.createdAt } : {})
+				} },
 				{ $group: { _id: null, total: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } }
 			])
 			
@@ -444,16 +459,19 @@ router.get('/artisan/analytics',
 			// Get orders by status
 			const ordersByStatus = await Order.aggregate([
 				{ $unwind: '$items' },
-				{ $match: { 'items.artisanId': artisanId } },
+				{ $match: { 
+					'items.artisanId': artisanId,
+					...(startDate || endDate ? { createdAt: dateFilter.createdAt } : {})
+				} },
 				{ $group: { _id: '$status', count: { $sum: 1 } } }
 			])
 			
-			// Get monthly revenue for the last 12 months
-			const monthlyRevenue = await Order.aggregate([
+			// Get monthly revenue for the last 12 months (or within date range)
+			let monthlyRevenueQuery = [
 				{ $unwind: '$items' },
 				{ $match: { 
 					'items.artisanId': artisanId,
-					createdAt: { $gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) }
+					...(startDate || endDate ? { createdAt: dateFilter.createdAt } : { createdAt: { $gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) } })
 				}},
 				{ 
 					$group: { 
@@ -466,12 +484,17 @@ router.get('/artisan/analytics',
 					} 
 				},
 				{ $sort: { '_id.year': 1, '_id.month': 1 } }
-			])
+			]
+			
+			const monthlyRevenue = await Order.aggregate(monthlyRevenueQuery)
 			
 			// Get top products
 			const topProducts = await Order.aggregate([
 				{ $unwind: '$items' },
-				{ $match: { 'items.artisanId': artisanId } },
+				{ $match: { 
+					'items.artisanId': artisanId,
+					...(startDate || endDate ? { createdAt: dateFilter.createdAt } : {})
+				} },
 				{ $group: { 
 					_id: '$items.productId', 
 					name: { $first: '$items.name' },
@@ -482,16 +505,126 @@ router.get('/artisan/analytics',
 				{ $limit: 10 }
 			])
 			
+			// Get daily revenue for chart (last 30 days or within date range)
+			const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+			const dailyRevenueQuery = [
+				{ $unwind: '$items' },
+				{ $match: { 
+					'items.artisanId': artisanId,
+					createdAt: startDate ? dateFilter.createdAt : { $gte: thirtyDaysAgo }
+				}},
+				{ 
+					$group: { 
+						_id: { 
+							$dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+						}, 
+						revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+						orders: { $sum: 1 }
+					} 
+				},
+				{ $sort: { '_id': 1 } }
+			]
+			
+			const dailyRevenue = await Order.aggregate(dailyRevenueQuery)
+			
 			res.json({
 				totalOrders,
 				totalRevenue,
 				ordersByStatus,
 				monthlyRevenue,
-				topProducts
+				topProducts,
+				dailyRevenue,
+				dateRange: {
+					startDate: startDate || null,
+					endDate: endDate || null
+				}
 			})
 		} catch (error) {
 			console.error('Error fetching artisan analytics:', error)
 			res.status(500).json({ error: 'Failed to fetch analytics' })
+		}
+	}
+)
+
+// Get artisan customers
+router.get('/artisan/customers',
+	authenticateToken,
+	validate(paginationSchema, 'query'),
+	async (req, res) => {
+		try {
+			const { page, limit } = req.validatedQuery
+			const skip = (page - 1) * limit
+			const artisanId = req.user._id
+			
+			// Get unique customers who have ordered from this artisan
+			const customers = await Order.aggregate([
+				{ $unwind: '$items' },
+				{ $match: { 'items.artisanId': artisanId } },
+				{ 
+					$group: { 
+						_id: '$userId',
+						name: { $first: '$shippingAddress.fullName' },
+						email: { $first: '$shippingAddress.email' },
+						phone: { $first: '$shippingAddress.phone' },
+						totalOrders: { $sum: 1 },
+						totalSpent: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+						lastOrderDate: { $max: '$createdAt' },
+						firstOrderDate: { $min: '$createdAt' },
+						avgOrderValue: { $avg: { $multiply: ['$items.price', '$items.quantity'] } },
+						orderDates: { $push: '$createdAt' }
+					} 
+				},
+				{ $sort: { lastOrderDate: -1 } },
+				{ $skip: skip },
+				{ $limit: limit }
+			])
+			
+			// Calculate additional metrics for each customer
+			const enhancedCustomers = customers.map(customer => {
+				const daysSinceFirstOrder = Math.floor((new Date() - new Date(customer.firstOrderDate)) / (1000 * 60 * 60 * 24));
+				const daysSinceLastOrder = Math.floor((new Date() - new Date(customer.lastOrderDate)) / (1000 * 60 * 60 * 24));
+				
+				// Determine customer segment
+				let segment = 'New';
+				if (customer.totalOrders >= 5 && customer.totalSpent > 5000) {
+					segment = 'VIP';
+				} else if (customer.totalOrders >= 3) {
+					segment = 'Regular';
+				} else if (daysSinceLastOrder > 90) {
+					segment = 'At Risk';
+				}
+				
+				// Calculate loyalty score (simple algorithm)
+				const loyaltyScore = Math.min(100, 
+					(customer.totalOrders * 10) + 
+					(Math.max(0, 100 - daysSinceLastOrder)) + 
+					(Math.min(50, customer.totalSpent / 100))
+				);
+				
+				return {
+					...customer,
+					segment,
+					loyaltyScore: Math.round(loyaltyScore),
+					daysSinceLastOrder,
+					daysSinceFirstOrder,
+					avgOrderValue: Math.round(customer.avgOrderValue)
+				};
+			});
+			
+			const total = await Order.distinct('userId', { 'items.artisanId': artisanId }).then(ids => ids.length)
+			
+			res.json({
+				customers: enhancedCustomers,
+				pagination: {
+					page,
+					limit,
+					total,
+					pages: Math.ceil(total / limit)
+				}
+			})
+		} catch (error) {
+			console.error('Error fetching artisan customers:', error)
+			res.status(500).json({ error: 'Failed to fetch customers' })
 		}
 	}
 )

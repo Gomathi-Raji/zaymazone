@@ -826,13 +826,21 @@ export const api = {
 			pages: number;
 		};
 	}>('/api/orders/artisan/my-orders', { auth: true }),
-	getArtisanAnalytics: () => apiRequest<{
-		totalOrders: number;
-		totalRevenue: number;
-		ordersByStatus: Array<{ _id: string; count: number }>;
-		monthlyRevenue: Array<{ _id: { year: number; month: number }; revenue: number; orders: number }>;
-		topProducts: Array<{ _id: string; name: string; totalSold: number; revenue: number }>;
-	}>('/api/orders/artisan/analytics', { auth: true }),
+	getArtisanAnalytics: (params?: { startDate?: string; endDate?: string }) => {
+		const queryParams = new URLSearchParams();
+		if (params?.startDate) queryParams.append('startDate', params.startDate);
+		if (params?.endDate) queryParams.append('endDate', params.endDate);
+		const queryString = queryParams.toString();
+		return apiRequest<{
+			totalOrders: number;
+			totalRevenue: number;
+			ordersByStatus: Array<{ _id: string; count: number }>;
+			monthlyRevenue: Array<{ _id: { year: number; month: number }; revenue: number; orders: number }>;
+			topProducts: Array<{ _id: string; name: string; totalSold: number; revenue: number }>;
+			dailyRevenue: Array<{ _id: string; revenue: number; orders: number }>;
+			dateRange: { startDate: string | null; endDate: string | null };
+		}>('/api/orders/artisan/analytics' + (queryString ? '?' + queryString : ''), { auth: true });
+	},
 	getArtisanProducts: () => apiRequest<{
 		products: Product[];
 		pagination: {
@@ -842,6 +850,63 @@ export const api = {
 			pages: number;
 		};
 	}>('/api/products/artisan/my-products', { auth: true }),
+	getArtisanCustomers: () => apiRequest<{
+		customers: Array<{
+			_id: string;
+			name: string;
+			email: string;
+			phone: string;
+			totalOrders: number;
+			totalSpent: number;
+			lastOrderDate: string;
+			firstOrderDate: string;
+			segment: string;
+			loyaltyScore: number;
+			daysSinceLastOrder: number;
+			daysSinceFirstOrder: number;
+			avgOrderValue: number;
+		}>;
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			pages: number;
+		};
+	}>('/api/orders/artisan/customers', { auth: true }),
+	getArtisanReviews: () => apiRequest<{
+		reviews: Array<{
+			_id: string;
+			rating: number;
+			title?: string;
+			comment: string;
+			images?: string[];
+			createdAt: string;
+			userId: {
+				name: string;
+				avatar?: string;
+			};
+			productId: {
+				name: string;
+				images: string[];
+			};
+			orderId: {
+				orderNumber: string;
+			};
+			response?: {
+				message: string;
+				respondedBy: {
+					name: string;
+				};
+				respondedAt: string;
+			};
+		}>;
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			pages: number;
+		};
+	}>('/api/reviews/artisan/my-reviews', { auth: true }),
 	// Images
 	uploadImage: imagesApi.upload,
 	

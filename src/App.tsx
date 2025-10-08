@@ -53,6 +53,9 @@ const ArtisanProfile = lazy(() => import("./pages/ArtisanProfile"));
 const MockPayment = lazy(() => import("./pages/MockPayment"));
 const Wishlist = lazy(() => import("./pages/Wishlist"));
 const Addresses = lazy(() => import("./pages/Addresses"));
+const ArtisanAnalytics = lazy(() => import("./pages/ArtisanAnalytics"));
+const ArtisanCustomers = lazy(() => import("./pages/ArtisanCustomers"));
+const ArtisanReviews = lazy(() => import("./pages/ArtisanReviews"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +131,9 @@ const App = () => (
             <Route path="/artisan/products" element={<ArtisanProducts />} />
             <Route path="/artisan/orders" element={<ArtisanOrders />} />
             <Route path="/artisan/profile" element={<ArtisanProfile />} />
+            <Route path="/artisan/analytics" element={<ArtisanAnalytics />} />
+            <Route path="/artisan/customers" element={<ArtisanCustomers />} />
+            <Route path="/artisan/reviews" element={<ArtisanReviews />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/addresses" element={<Addresses />} />
             
